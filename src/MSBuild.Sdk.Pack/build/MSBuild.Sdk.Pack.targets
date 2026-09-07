@@ -1,0 +1,6 @@
+<Project>
+
+  <Import Project="$(MSBuildThisFileDirectory)PackAsAnalyzer.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)PackProjectReference.targets" />
+
+</Project>
