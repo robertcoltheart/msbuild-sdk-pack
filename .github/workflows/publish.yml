@@ -25,6 +25,14 @@ jobs:
           dotnet-version: |
             10.x
 
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.7.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Calculate version
+        uses: gittools/actions/gitversion/execute@v4.7.0
+
       - name: Deploy
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
