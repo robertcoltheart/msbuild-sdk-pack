@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="src/MSBuild.Sdk.Pack.Tests/MSBuild.Sdk.Pack.Tests.csproj" Id="e30f84bd-876d-4f9d-817b-e228ef164bb5" />
   <Project Path="src/MSBuild.Sdk.Pack/MSBuild.Sdk.Pack.msbuildproj" Type="13b669be-bb05-4ddf-9536-439f39a36129" />
 </Solution>

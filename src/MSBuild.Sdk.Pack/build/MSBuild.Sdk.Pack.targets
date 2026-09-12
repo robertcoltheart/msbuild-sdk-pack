@@ -1,6 +1,71 @@
 <Project>
 
-  <Import Project="$(MSBuildThisFileDirectory)PackAsAnalyzer.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)PackProjectReference.targets" />
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeProjectReferencesInPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="IncludeProjectReferencesInPackage" Returns="@(TfmSpecificPackageFile)">
+
+    <ItemGroup>
+      <_PackProjectReference Include="@(ProjectReference->WithMetadataValue('Pack', 'true'))" />
+    </ItemGroup>
+
+    <!-- Default to the same lib folder as the consuming project -->
+    <ItemGroup>
+      <_PackProjectReference Update="@(_PackProjectReference)">
+        <PackagePath Condition="'%(_PackProjectReference.PackagePath)' == ''">lib/$(TargetFramework)</PackagePath>
+      </_PackProjectReference>
+    </ItemGroup>
+
+    <MSBuild Condition="'@(_PackProjectReference)' != ''"
+             Projects="$(MSBuildProjectFullPath)"
+             Targets="_GetSingleProjectReferencePackageFile"
+             Properties="_ProjectReferencePath=%(_PackProjectReference.Identity);_ProjectReferencePackagePathValue=%(_PackProjectReference.PackagePath);_ProjectReferenceSetTargetFramework=%(_PackProjectReference.SetTargetFramework)">
+      <Output TaskParameter="TargetOutputs" ItemName="TfmSpecificPackageFile" />
+    </MSBuild>
+  </Target>
+
+  <Target Name="_GetSingleProjectReferencePackageFile" Returns="@(TfmSpecificPackageFile)">
+
+    <PropertyGroup>
+      <_ProjectReferenceRemoveProperties Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">TargetFramework</_ProjectReferenceRemoveProperties>
+    </PropertyGroup>
+
+    <!-- Referenced project must support the same target frameworks as the current project -->
+    <MSBuild Condition="'$(_ProjectReferenceSetTargetFramework)' == ''"
+             Projects="$(_ProjectReferencePath)"
+             Targets="GetTargetFrameworks"
+             RemoveProperties="$(_ProjectReferenceRemoveProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceMetadata" />
+    </MSBuild>
+
+    <ItemGroup Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">
+      <_ProjectReferenceTargetFramework Include="%(_ProjectReferenceMetadata.TargetFrameworks)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">
+      <_ProjectReferenceMatchingTargetFramework Include="@(_ProjectReferenceTargetFramework)" Condition="'%(Identity)' == '$(TargetFramework)'" />
+    </ItemGroup>
+
+    <Error Condition="'$(_ProjectReferenceSetTargetFramework)' == '' AND '@(_ProjectReferenceMatchingTargetFramework)' == ''"
+           Text="Project reference '$(_ProjectReferencePath)' does not support the target framework '$(TargetFramework)'. Please ensure that the project reference supports this target framework." />
+
+    <!-- Force the referenced project to build for this project's TargetFramework -->
+    <PropertyGroup>
+      <_ProjectReferenceBuildProperties>$(_ProjectReferenceSetTargetFramework)</_ProjectReferenceBuildProperties>
+      <_ProjectReferenceBuildProperties Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">TargetFramework=$(TargetFramework)</_ProjectReferenceBuildProperties>
+    </PropertyGroup>
+
+    <!-- Build both output groups which includes the xmldoc file if it exists -->
+    <MSBuild Projects="$(_ProjectReferencePath)"
+             Targets="BuiltProjectOutputGroup;DocumentationProjectOutputGroup"
+             Properties="$(_ProjectReferenceBuildProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceTargetPath" />
+    </MSBuild>
+
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_ProjectReferenceTargetPath)" PackagePath="$(_ProjectReferencePackagePathValue)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
