@@ -54,7 +54,7 @@ public class MSBuildFixture : IDisposable
             return true;
         }
 
-        var (output, error) = await ReadAsync("dotnet", $"pack {projectPath} -o {outputDirectory} -c Release", handleExitCode: HandleExitCode);
+        var (output, error) = await ReadAsync("dotnet", $"pack {projectPath} -o {outputDirectory} -c Release -v normal", handleExitCode: HandleExitCode);
 
         return new PackResult(success, output, error, outputDirectory);
     }

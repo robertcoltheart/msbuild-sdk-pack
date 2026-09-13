@@ -27,29 +27,6 @@
 
   <Target Name="_GetSingleProjectReferencePackageFile" Returns="@(TfmSpecificPackageFile)">
 
-    <PropertyGroup>
-      <_ProjectReferenceRemoveProperties Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">TargetFramework</_ProjectReferenceRemoveProperties>
-    </PropertyGroup>
-
-    <!-- Referenced project must support the same target frameworks as the current project -->
-    <MSBuild Condition="'$(_ProjectReferenceSetTargetFramework)' == ''"
-             Projects="$(_ProjectReferencePath)"
-             Targets="GetTargetFrameworks"
-             RemoveProperties="$(_ProjectReferenceRemoveProperties)">
-      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceMetadata" />
-    </MSBuild>
-
-    <ItemGroup Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">
-      <_ProjectReferenceTargetFramework Include="%(_ProjectReferenceMetadata.TargetFrameworks)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">
-      <_ProjectReferenceMatchingTargetFramework Include="@(_ProjectReferenceTargetFramework)" Condition="'%(Identity)' == '$(TargetFramework)'" />
-    </ItemGroup>
-
-    <Error Condition="'$(_ProjectReferenceSetTargetFramework)' == '' AND '@(_ProjectReferenceMatchingTargetFramework)' == ''"
-           Text="Project reference '$(_ProjectReferencePath)' does not support the target framework '$(TargetFramework)'. Please ensure that the project reference supports this target framework." />
-
     <!-- Force the referenced project to build for this project's TargetFramework -->
     <PropertyGroup>
       <_ProjectReferenceBuildProperties>$(_ProjectReferenceSetTargetFramework)</_ProjectReferenceBuildProperties>
@@ -66,6 +43,9 @@
     <ItemGroup>
       <TfmSpecificPackageFile Include="@(_ProjectReferenceTargetPath)" PackagePath="$(_ProjectReferencePackagePathValue)" />
     </ItemGroup>
+
+    <!-- Log which target DLLs are being added to the package -->
+    <Message Text="Adding '%(TfmSpecificPackageFile.Identity)' to package at path '%(TfmSpecificPackageFile.PackagePath)'" Importance="high" Condition="'@(TfmSpecificPackageFile)' != '' AND '%(TfmSpecificPackageFile.Extension)' == '.dll'" />
   </Target>
 
 </Project>
