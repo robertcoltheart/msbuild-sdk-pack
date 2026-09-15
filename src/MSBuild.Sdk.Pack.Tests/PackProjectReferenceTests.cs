@@ -102,4 +102,18 @@ public class PackProjectReferenceTests
         await Assert.That(result.PackageContains("App", "lib/net10.0/Lib.dll")).IsTrue();
         await Assert.That(result.PackageContains("App", "lib/net10.0/Lib.xml")).IsTrue();
     }
+
+    [Test]
+    public async Task DoesNotPacksSymbols()
+    {
+        using var fixture = new MSBuildFixture();
+
+        var libPath = fixture.WriteReferenceProject("Lib", "<TargetFramework>net10.0</TargetFramework>");
+        var appPath = fixture.WriteConsumingProject("App", "<TargetFramework>net10.0</TargetFramework>", "../Lib/Lib.csproj");
+
+        var result = await fixture.Pack(appPath);
+
+        await Assert.That(result.PackageContains("App", "lib/net10.0/Lib.dll")).IsTrue();
+        await Assert.That(result.PackageContains("App", "lib/net10.0/Lib.pdb")).IsFalse();
+    }
 }
