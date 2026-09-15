@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets/3.7.134">
+﻿<Project Sdk="Microsoft.Build.NoTargets/3.7.134">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="build/**/*" Pack="true" />
+    <None Include="build/**/*" Pack="true" PackagePath="build" />
   </ItemGroup>
 
 </Project>
