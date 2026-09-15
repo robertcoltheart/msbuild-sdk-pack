@@ -4,48 +4,13 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeProjectReferencesInPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <Target Name="IncludeProjectReferencesInPackage" Returns="@(TfmSpecificPackageFile)">
-
+  <Target Name="IncludeProjectReferencesInPackage"
+          Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Pack', 'true'))"
+          DependsOnTargets="BuildOnlySettings;ResolveReferences">
     <ItemGroup>
-      <_PackProjectReference Include="@(ProjectReference->WithMetadataValue('Pack', 'true'))" />
+      <TfmSpecificPackageFile Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))"
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(TargetFramework)'))" />
     </ItemGroup>
-
-    <!-- Default to the same lib folder as the consuming project -->
-    <ItemGroup>
-      <_PackProjectReference Update="@(_PackProjectReference)">
-        <PackagePath Condition="'%(_PackProjectReference.PackagePath)' == ''">lib/$(TargetFramework)</PackagePath>
-      </_PackProjectReference>
-    </ItemGroup>
-
-    <MSBuild Condition="'@(_PackProjectReference)' != ''"
-             Projects="$(MSBuildProjectFullPath)"
-             Targets="_GetSingleProjectReferencePackageFile"
-             Properties="_ProjectReferencePath=%(_PackProjectReference.Identity);_ProjectReferencePackagePathValue=%(_PackProjectReference.PackagePath);_ProjectReferenceSetTargetFramework=%(_PackProjectReference.SetTargetFramework)">
-      <Output TaskParameter="TargetOutputs" ItemName="TfmSpecificPackageFile" />
-    </MSBuild>
-  </Target>
-
-  <Target Name="_GetSingleProjectReferencePackageFile" Returns="@(TfmSpecificPackageFile)">
-
-    <!-- Force the referenced project to build for this project's TargetFramework -->
-    <PropertyGroup>
-      <_ProjectReferenceBuildProperties>$(_ProjectReferenceSetTargetFramework)</_ProjectReferenceBuildProperties>
-      <_ProjectReferenceBuildProperties Condition="'$(_ProjectReferenceSetTargetFramework)' == ''">TargetFramework=$(TargetFramework)</_ProjectReferenceBuildProperties>
-    </PropertyGroup>
-
-    <!-- Build both output groups which includes the xmldoc file if it exists -->
-    <MSBuild Projects="$(_ProjectReferencePath)"
-             Targets="BuiltProjectOutputGroup;DocumentationProjectOutputGroup"
-             Properties="$(_ProjectReferenceBuildProperties)">
-      <Output TaskParameter="TargetOutputs" ItemName="_ProjectReferenceTargetPath" />
-    </MSBuild>
-
-    <ItemGroup>
-      <TfmSpecificPackageFile Include="@(_ProjectReferenceTargetPath)" PackagePath="$(_ProjectReferencePackagePathValue)" />
-    </ItemGroup>
-
-    <!-- Log which target DLLs are being added to the package -->
-    <Message Text="Adding '%(TfmSpecificPackageFile.Identity)' to package at path '%(TfmSpecificPackageFile.PackagePath)'" Importance="high" Condition="'@(TfmSpecificPackageFile)' != '' AND '%(TfmSpecificPackageFile.Extension)' == '.dll'" />
   </Target>
 
 </Project>
